@@ -11,7 +11,7 @@ function UserList() {
   // ============================================================
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("http://184.72.149.109:8000/api/users/");
+      const response = await axios.get("http://54.210.22.117:8000/api/users/");
       setUsers(response.data);
       setFilteredUsers(response.data);
     } catch (error) {
@@ -37,7 +37,7 @@ function UserList() {
     if (!confirmar) return;
 
     try {
-      await axios.delete(`http://184.72.149.109:8000/api/users/${id}/`);
+      await axios.delete(`http://54.210.22.117:8000/api/users/${id}/`);
       alert("🗑️ Usuario eliminado correctamente.");
       fetchUsers(); // refrescar la lista
     } catch (error) {

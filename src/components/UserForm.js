@@ -15,7 +15,7 @@ function UserForm({ onUserAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://184.72.149.109:8000/api/users/", {
+      const res = await fetch("http://54.210.22.117:8000/api/users/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

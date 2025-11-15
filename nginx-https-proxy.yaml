@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-https-config
+  namespace: users-app
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    http {
+        server {
+            listen 80;
+            server_name myusersapp.duckdns.org;
+            return 301 https://$server_name$request_uri;
+        }
+
+        server {
+            listen 443 ssl;
+            server_name myusersapp.duckdns.org;
+
+            ssl_certificate /etc/nginx/ssl/tls.crt;
+            ssl_certificate_key /etc/nginx/ssl/tls.key;
+
+            # Frontend
+            location / {
+kubectl rollout status deployment/nginx-https-proxy -n users-apppwarded_for;
+configmap/nginx-https-config configured
+deployment.apps/nginx-https-proxy unchanged
+deployment.apps/nginx-https-proxy restarted
+Waiting for deployment "nginx-https-proxy" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "nginx-https-proxy" rollout to finish: 1 old replicas are pending termination...
+deployment "nginx-https-proxy" successfully rolled out
+ubuntu@ip-172-31-29-107:~/k8s-manifests$ cd ~/app/users-frontend
+
+# El frontend usará la misma URL base (myusersapp.duckdns.org)
+cat > .env <<EOF
+REACT_APP_API_URL=https://myusersapp.duckdns.org

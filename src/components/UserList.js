@@ -1,155 +1,133 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+// Leer configuración de window o usar variable de entorno
+const API_URL = window.API_CONFIG?.API_URL || process.env.REACT_APP_API_URL || "http://localhost:8000";
+
 function UserList() {
   const [users, setUsers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState("");
 
-  // ============================================================
-  // 🧩 1. Obtener lista de usuarios desde el backend
-  // ============================================================
-  const fetchUsers = async () => {
-    try {
-      const response = await axios.get("http://54.210.22.117:8000/api/users/");
-      setUsers(response.data);
-      setFilteredUsers(response.data);
-    } catch (error) {
-      console.error("❌ Error obteniendo usuarios:", error);
-      alert("No se pudo conectar con el servidor.");
-    }
-  };
-
-  // ============================================================
-  // 🧩 2. Cargar usuarios una vez al iniciar el componente
-  // ============================================================
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  // ============================================================
-  // 🧩 3. Función para eliminar usuario
-  // ============================================================
-  const deleteUser = async (id) => {
-    const confirmar = window.confirm(
-      "¿Estás seguro de que querés eliminar este usuario?"
-    );
-    if (!confirmar) return;
-
-    try {
-      await axios.delete(`http://54.210.22.117:8000/api/users/${id}/`);
-      alert("🗑️ Usuario eliminado correctamente.");
-      fetchUsers(); // refrescar la lista
-    } catch (error) {
-      console.error("❌ Error al eliminar usuario:", error);
-      alert("No se pudo eliminar el usuario. Verificá el servidor.");
-    }
-  };
-
-  // ============================================================
-  // 🧩 4. Búsqueda local (sin llamadas al backend)
-  // ============================================================
-  const handleSearch = (e) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-
-    if (term.trim() === "") {
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
       setFilteredUsers(users);
     } else {
-      const filtered = users.filter(
-        (u) =>
-          u.nombre.toLowerCase().includes(term) ||
-          u.email.toLowerCase().includes(term)
+      const filtered = users.filter((user) =>
+        user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.telefono && user.telefono.includes(searchTerm))
       );
       setFilteredUsers(filtered);
     }
+  }, [searchTerm, users]);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/users`);
+      setUsers(response.data);
+      setFilteredUsers(response.data);
+      setError("");
+    } catch (err) {
+      setError(`Error al cargar usuarios: ${err.message}`);
+      console.error(err);
+    }
   };
 
-  // ============================================================
-  // 🧩 5. Renderizado de la tabla con botón de eliminación
-  // ============================================================
-  return (
-    <div style={{ textAlign: "center" }}>
-      <h2>📋 Usuarios Registrados</h2>
+  const handleDelete = async (id) => {
+    if (!window.confirm("¿Estás seguro de eliminar este usuario?")) return;
+    
+    try {
+      await axios.delete(`${API_URL}/users/${id}/`);
+      fetchUsers();
+    } catch (err) {
+      alert(`Error al eliminar: ${err.message}`);
+    }
+  };
 
-      {/* Barra de búsqueda */}
+  return (
+    <div>
+      <h2>Usuarios Registrados ({filteredUsers.length})</h2>
+      <p style={{ fontSize: "12px", color: "#666" }}>API: {API_URL}</p>
+      
       <div style={{ marginBottom: "20px" }}>
         <input
           type="text"
-          placeholder="Buscar por nombre o email..."
+          placeholder="🔍 Buscar por nombre, email o teléfono..."
           value={searchTerm}
-          onChange={handleSearch}
-          style={{ padding: "5px", width: "250px" }}
-        />
-        <button
-          onClick={() => {
-            setSearchTerm("");
-            setFilteredUsers(users);
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            width: "100%",
+            maxWidth: "500px",
+            padding: "10px",
+            fontSize: "16px",
+            border: "2px solid #4CAF50",
+            borderRadius: "5px",
           }}
-          style={{ marginLeft: "10px" }}
-        >
-          Mostrar todos
-        </button>
-        <button
-          onClick={fetchUsers}
-          style={{ marginLeft: "10px", backgroundColor: "#d3f9d8" }}
-        >
-          🔄 Refrescar lista
-        </button>
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm("")}
+            style={{
+              marginLeft: "10px",
+              padding: "10px 15px",
+              cursor: "pointer",
+            }}
+          >
+            Limpiar
+          </button>
+        )}
       </div>
 
-      {/* Tabla de usuarios */}
-      <table
-        border="1"
-        cellPadding="5"
-        style={{
-          margin: "0 auto",
-          borderCollapse: "collapse",
-          width: "85%",
-          maxWidth: "1000px",
-        }}
-      >
-        <thead>
-          <tr style={{ backgroundColor: "#f0f0f0" }}>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Teléfono</th>
-            <th>Fecha de Registro</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredUsers.length > 0 ? (
-            filteredUsers.map((u) => (
-              <tr key={u.id}>
-                <td>{u.id}</td>
-                <td>{u.nombre}</td>
-                <td>{u.email}</td>
-                <td>{u.telefono}</td>
-                <td>{new Date(u.created_at).toLocaleString()}</td>
-                <td>
-                  <button
-                    onClick={() => deleteUser(u.id)}
-                    style={{
-                      backgroundColor: "#ffb3b3",
-                      border: "none",
-                      padding: "5px 10px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    🗑️ Eliminar
-                  </button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="6">No se encontraron usuarios.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      
+      {filteredUsers.length === 0 && !error && searchTerm && (
+        <p>No se encontraron usuarios que coincidan con "{searchTerm}"</p>
+      )}
+      
+      {filteredUsers.length === 0 && !error && !searchTerm && (
+        <p>No hay usuarios registrados</p>
+      )}
+      
+      <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+        {filteredUsers.map((user) => (
+          <div
+            key={user.id}
+            style={{
+              border: "1px solid #ccc",
+              padding: "15px",
+              marginBottom: "10px",
+              borderRadius: "5px",
+              textAlign: "left",
+              backgroundColor: "#f9f9f9",
+            }}
+          >
+            <p><strong>Nombre:</strong> {user.nombre}</p>
+            <p><strong>Email:</strong> {user.email}</p>
+            <p><strong>Teléfono:</strong> {user.telefono || "N/A"}</p>
+            <p><strong>Registrado:</strong> {new Date(user.created_at).toLocaleString()}</p>
+            <button 
+              onClick={() => handleDelete(user.id)} 
+              style={{ 
+                marginTop: "10px", 
+                backgroundColor: "#f44336",
+                color: "white",
+                border: "none",
+                padding: "8px 15px",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              🗑️ Eliminar
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

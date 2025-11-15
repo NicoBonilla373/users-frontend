@@ -1,80 +1,81 @@
 import React, { useState } from "react";
 
-function UserForm({ onUserAdded }) {
-  const [formData, setFormData] = useState({
-    nombre: "",
-    email: "",
-    telefono: "",
-  });
-  const [message, setMessage] = useState("");
+// Leer configuración de window o usar variable de entorno
+const API_URL = window.API_CONFIG?.API_URL || process.env.REACT_APP_API_URL || "http://localhost:8000";
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+function UserForm({ onUserAdded }) {
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [message, setMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://54.210.22.117:8000/api/users/", {
+      const res = await fetch(`${API_URL}/users`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData), // ✅ usar formData
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, email, telefono }),
       });
 
       if (res.ok) {
-        setMessage("✅ Usuario registrado con éxito!");
-        setFormData({ nombre: "", email: "", telefono: "" });
-        onUserAdded();
+        setMessage("✅ Usuario registrado exitosamente");
+        setNombre("");
+        setEmail("");
+        setTelefono("");
+        setTimeout(() => {
+          onUserAdded();
+        }, 1500);
       } else {
-        const errorData = await res.json();
-        console.error(errorData);
-        setMessage("❌ Error al registrar el usuario.");
+        const error = await res.json();
+        setMessage(`❌ Error: ${JSON.stringify(error)}`);
       }
-    } catch (err) {
-      console.error(err);
-      setMessage("❌ No se pudo conectar al servidor.");
+    } catch (error) {
+      setMessage(`❌ Error de conexión: ${error.message}`);
     }
   };
 
   return (
-    <div style={{ marginBottom: "30px" }}>
-      <h2>Registrar nuevo usuario</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Nombre: </label>
+    <div>
+      <h2>Registrar Nuevo Usuario</h2>
+      <form onSubmit={handleSubmit} style={{ maxWidth: "400px", margin: "0 auto" }}>
+        <div style={{ marginBottom: "10px" }}>
           <input
             type="text"
-            name="nombre"
-            value={formData.nombre}
-            onChange={handleChange}
+            placeholder="Nombre"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
             required
+            style={{ width: "100%", padding: "8px" }}
           />
         </div>
-        <div>
-          <label>Email: </label>
+        <div style={{ marginBottom: "10px" }}>
           <input
             type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
+            style={{ width: "100%", padding: "8px" }}
           />
         </div>
-        <div>
-          <label>Teléfono: </label>
+        <div style={{ marginBottom: "10px" }}>
           <input
             type="text"
-            name="telefono"
-            value={formData.telefono}
-            onChange={handleChange}
-            required
+            placeholder="Teléfono"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            style={{ width: "100%", padding: "8px" }}
           />
         </div>
-        <button type="submit">Registrar</button>
+        <button type="submit" style={{ padding: "10px 20px" }}>
+          Registrar
+        </button>
       </form>
-      {message && <p>{message}</p>}
+      {message && <p style={{ marginTop: "20px" }}>{message}</p>}
+      <p style={{ fontSize: "12px", color: "#666", marginTop: "20px" }}>
+        API: {API_URL}
+      </p>
     </div>
   );
 }
